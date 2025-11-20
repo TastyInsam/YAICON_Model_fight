@@ -1,0 +1,33 @@
+iterative_convo_v1.txt
+
+Variables: 
+!<INPUT 0>! -- persona ISS
+!<INPUT 1>! -- target persona name
+!<INPUT 2>! -- context
+!<INPUT 3>! -- persona name
+!<INPUT 4>! -- target persona name
+!<INPUT 5>! -- persona name
+!<INPUT 6>! -- persona name
+!<INPUT 7>! -- persona name
+<commentblockmarker>###</commentblockmarker>
+Context for the task: 
+
+PART 1. 
+This is the description of your persona.
+!<INPUT 0>!
+
+Here is the description of target persona. 
+!<INPUT 1>!
+
+PART 2. 
+Conversation Context: 
+!<INPUT 2>!
+
+---
+Task: Given the above, what should !<INPUT 3>! say to !<INPUT 4>! next in the conversation? And did it end the conversation?
+
+Output format: Output a json of the following format: 
+{
+"!<INPUT 5>!": "<!<INPUT 6>!'s utterance>",
+"Did the conversation end with !<INPUT 7>!'s utterance?": "<json Boolean>"
+}
