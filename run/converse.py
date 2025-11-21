@@ -1,5 +1,5 @@
 import utils
-import model as m
+import run_model as m
 
 # def generate_agent_chat(init_persona,
 #                         target_persona,
@@ -11,8 +11,11 @@ import model as m
 #                                             curr_context,
 #                                             init_idea,
 #                                             target_idea
-#                                            )
+#   
+#                                          )
     
+trajectory_path = "./result/trajectory.jsonl"
+
 def generate_one_utterance(topic,
                            init_persona, 
                            target_persona, 
@@ -29,13 +32,9 @@ def generate_one_utterance(topic,
     #                 f"Background: {init_persona.background}\n")
     # curr_context += ("You are")
 
-    x = m.run_model_generate_chat_utt(topic, init_persona, target_persona, curr_context, curr_chat)[0]
+    x = m.run_model_generate_chat_utt(topic, init_persona, target_persona, context, curr_chat)[0]
     
-
-
-                    
-                    
-    
+    return x["utterance"], x["end"]
 
 
 def agent_chat(n, topic, init_persona, target_persona):
