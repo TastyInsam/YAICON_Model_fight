@@ -1,0 +1,10 @@
+{
+    "name":"B",
+    "age":42,
+    "gender": "woman",
+    "religion": "buddist",
+    "race": "asian",
+    "topic": "여성가족부 폐지",
+    "stance": "여성가족부는 폐지되어서는 안된다",
+    "background": "그녀는 현대 사회에서 여성권리 개선이 아직 절실하다고 보고, 여성가족부가 그것을 해결해줄 수 있다고 굳게 믿고 있다."
+}

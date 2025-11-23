@@ -1,79 +1,74 @@
 import utils
+import json
 import run_model as m
+import rag
+import os
+from dotenv import load_dotenv                                    
 
-# def generate_agent_chat(init_persona,
-#                         target_persona,
-#                         curr_context,
-#                         init_idea,
-#                         target_idea):
-#     summarized_idea = m.run_model_agent_chat(init_persona,
-#                                             target_persona,
-#                                             curr_context,
-#                                             init_idea,
-#                                             target_idea
-#   
-#                                          )
-    
-trajectory_path = "./result/trajectory.jsonl"
-
-def generate_one_utterance(topic,
+def generate_one_utterance(tokenizer,
+                           model,
                            init_persona, 
-                           target_persona, 
-                           context, 
-                           curr_chat):
-    # curr_context = (f"This is your persona info.\n" +
-    #                 f"name: {init_persona.name}\n" +
-    #                 f"age: {init_persona.age}\n" +
-    #                 f"gender: {init_persona.gender}\n" + 
-    #                 f"religion: {init_persona.religion}\n" +
-    #                 f"race: {init_persona.race}\n\n" +
-    #                 f"Topic: {init_persona.topic}\n" +
-    #                 f"Main Stance: {init_persona.stance}\n" +
-    #                 f"Background: {init_persona.background}\n")
-    # curr_context += ("You are")
+                           target_persona,  
+                           context,
+                           client):
 
-    x = m.run_model_generate_chat_utt(topic, init_persona, target_persona, context, curr_chat)[0]
-    
-    return x["utterance"], x["end"]
+    x = m.run_model_generate_chat_utt(tokenizer, model,init_persona, target_persona, context, client)[0]
+
+    try:
+        output = json.loads(x)
+    except:
+        output = x
+
+    print("\n")
+    print("=================final utterance:===================")
+    init_persona_name = init_persona["name"]
+    print(f"{init_persona_name}: {x}")
+
+    return x
 
 
-def agent_chat(n, topic, init_persona, target_persona):
-    # create 
-    curr_chat= []
+def agent_chat(n, init_persona, target_persona, mode:str, client):
 
-    for i in range(n):
-        context = "" # context = persona(main stance) + chat history
+    load_dotenv()
+    QUESTION = os.getenv("QUESTION")
 
-        # chat_str = ""
-        # for i in curr_chat:
-        #     chat_str += ": ".join(i) + "\n"
-        
-        utt, end = generate_one_utterance(topic,init_persona, target_persona, context, curr_chat)
+    # load base model
+    init_tokenizer, init_model = rag.model_setup(mode)
+    target_tokenizer, target_model = rag.model_setup(mode)
 
-        curr_chat += [[init_persona.name, utt]]
-        if end:
-            break
+    # data preparation
+    history = []
+    history.append({
+        "meta": {
+            "topic": init_persona["topic"],
+            "mode": mode,
+            "Question": QUESTION,
+            init_persona["name"] : init_persona,
+            target_persona["name"]: target_persona,
 
-        context  = "" # context = target_persona
-
-        # for i in curr_chat:
-        #     chat_str += ": ".join(i) + "\n"
-        
-        utt, end = generate_one_utterance(topic, target_persona, init_persona, context, curr_chat)
-        
-        curr_chat += [[target_persona.name, utt]]
-
-        if end:
-            break
-    
-    d = []
-    d.append({
-        "meta" : ""
+        }
     })
-    for row in curr_chat:
-        d.append({
-            f"{row[0]}" : f"{row[1]}"
-        })
 
-    utils.record_json(d, trajectory_path)
+    context = f"{QUESTION}\n"
+
+    # run a conversation
+    for i in range(n):
+        turn_data = {}
+        turn_data["turn"] = i+1
+        #init's turn
+        utt= generate_one_utterance(init_tokenizer, init_model, init_persona, target_persona, context, client)
+
+        turn_data[init_persona["name"]] = utt
+        context = f"{init_persona["name"]}: {utt}\n" # context = init_persona
+        
+        #target's turn
+        utt= generate_one_utterance(target_tokenizer, target_model,target_persona, init_persona, context, client)
+        
+        turn_data[target_persona["name"]] = utt
+        context = f"{target_persona["name"]}: {utt}\n"  # context = target_persona
+
+        # save
+        history.append(turn_data)
+
+    return history
     

@@ -1,33 +1,44 @@
-iterative_convo_v1.txt
-
 Variables: 
-!<INPUT 0>! -- persona ISS
-!<INPUT 1>! -- target persona name
-!<INPUT 2>! -- context
+!<INPUT 0>! -- context
+!<INPUT 1>! -- persona ISS
+!<INPUT 2>! -- target ISS
 !<INPUT 3>! -- persona name
-!<INPUT 4>! -- target persona name
-!<INPUT 5>! -- persona name
+!<INPUT 4>! -- debate topic
+!<INPUT 5>! -- target persona name
 !<INPUT 6>! -- persona name
+
 !<INPUT 7>! -- persona name
+!<INPUT 8>! -- target persona name
+!<INPUT 9>! -- persona name
+!<INPUT 10>! -- persona name
 <commentblockmarker>###</commentblockmarker>
 Context for the task: 
 
 PART 1. 
-This is the description of your persona.
+Debate Context: 
 !<INPUT 0>!
 
-Here is the description of target persona. 
+PART 2. 
+This is the description of your persona.
 !<INPUT 1>!
 
-PART 2. 
-Conversation Context: 
+Here is the description of target persona who stand against your statement. 
 !<INPUT 2>!
 
+!<INPUT 3>! is having a **FIGHT** about !<INPUT 4>! with !<INPUT 5>! 
+!<INPUT 6>! must *COUNTER** the opponent's statment if possible.
+
 ---
-Task: Given the above, what should !<INPUT 3>! say to !<INPUT 4>! next in the conversation? And did it end the conversation?
+Task: Given the above, what should !<INPUT 7>! **say** to !<INPUT 8>! next in the debate?
+**Response must be done in KOREAN**
 
 Output format: Output a json of the following format: 
 {
-"!<INPUT 5>!": "<!<INPUT 6>!'s utterance>",
-"Did the conversation end with !<INPUT 7>!'s utterance?": "<json Boolean>"
+"!<INPUT 9>!": "<!<INPUT 10>!'s utterance>",
 }
+
+ex1) 
+"저는 그 생각에 반대합니다. 여성가족부의 기능은 현대사회에 있어 더 이상 무의미합니다. 시대착오적인 부서는 없어져야 마땅할 것입니다."
+
+ex2)
+"모병제에 찬성합니다. 인구 부족 문제로 인해 더 이상 징병제는 유지할 수 없게 되었기 때문입니다."

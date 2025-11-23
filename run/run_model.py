@@ -1,129 +1,165 @@
 import json
 import model_structure as ms
+import rag as rag
 
-def run_model_generate_chat_utt(topic,
+def run_model_generate_chat_utt(tokenizer,
+                                model,
                                 init_persona, 
                                 target_persona, 
-                                context, 
-                                curr_chat):
-    def create_prompt_input(topic, init_persona, target_persona, curr_context, curr_chat):
-        persona = init_persona
-
+                                context,
+                                client):
+    
+    def _create_persona_description(init_persona, target_persona):
         persona_str = ""
-        for key, val in persona:
+        for key, val in init_persona.items():
             persona_str += f"{key}: {val}\n"
-
-        curr_chat_str = ""
-        for i in curr_chat:
-            curr_chat_str += ": ".join(i) + "\n"
-        if curr_chat_str == "":
-            curr_chat_str = "The conversation has not started yet -- start it!]"
-
-        init_description = f"Here is a brief description of {init_persona.name}.\n{persona_str}"
-        prompt_input = [
-            init_description,
-            init_persona.name,
-            curr_context, 
-            init_persona.name, 
-            target_persona.name,
-            init_persona.name, 
-            init_persona.name,
-            init_persona.name]
-        return prompt_input
-    
-    def __chat_func_clean_up(gpt_response, prompt=""): 
-        gpt_response = extract_first_json_dict(gpt_response)
-
-        cleaned_dict = dict()
-        cleaned = []
-        for key, val in gpt_response.items(): 
-            cleaned += [val]
-        cleaned_dict["utterance"] = cleaned[0]
-        cleaned_dict["end"] = True
-        if "f" in str(cleaned[1]) or "F" in str(cleaned[1]): 
-            cleaned_dict["end"] = False
-
-        return cleaned_dict
-
-    def __chat_func_validate(gpt_response, prompt=""): 
-        print ("ugh...")
-        try: 
-        # print ("debug 1")
-        # print (gpt_response)
-        # print ("debug 2")
-
-            print (extract_first_json_dict(gpt_response))
-            # print ("debug 3")
-            return True
-        except:
-            return False 
         
-    def get_fail_safe():
-        cleaned_dict = dict()
-        cleaned_dict["utterance"] = "..."
-        cleaned_dict["end"] = False
-        return cleaned_dict
+        target_persona_str = ""
+        for key, val in target_persona.items():
+            target_persona_str += f"{key}: {val}\n"
 
-    print("11")
-    prompt_template = "data/prompt/conversation.txt"
-    prompt_input = create_prompt_input(topic, init_persona, target_persona, context, curr_chat)
+        init_description = f"{persona_str}"
+        target_description = f"{target_persona_str}"
+
+        return init_description, target_description
     
-    print("22")
-    prompt = generate_prompt(prompt_input, prompt_template)
+
+    def _create_persona_summary(init_persona, target_persona, init_description, target_description, context):
+        query = f"""
+You are a DCINSIDE user who speak violently. 
+This is a brief description of {init_persona["name"]}. This is you. 
+{init_description}
+
+This is a brief description of {target_persona["name"]}, who stands against you. 
+{target_description}
+
+{target_persona["name"]} said: 
+{context}
+
+From{init_persona["name"]}'s perspecitive,  What will you say to {target_persona["name"]}?
+"""
+        return query
     
-    print(prompt)
 
-    output = ms.get_model_request(prompt)
+    # main
+    init_description, target_description = _create_persona_description(init_persona, target_persona)
+    summary = _create_persona_summary(init_persona, target_persona, init_description, target_description, context)
+    output = rag.generate_rag_response_local(tokenizer, model, client, summary, context)
 
-    print(output)
-    param = {"engine": "text-davinci-003", "max_tokens": 50, 
-               "temperature": 0, "top_p": 1, "stream": False,
-               "frequency_penalty": 0, "presence_penalty": 0, "stop": None}
-    return output, [output, prompt, param, prompt_input]
+    # print("\n")
+    # print("=====response====")
+    # print(output)
 
-def generate_prompt(curr_input, prompt_lib_file): 
-    """
-    Takes in the current input (e.g. comment that you want to classifiy) and 
-    the path to a prompt file. The prompt file contains the raw str prompt that
-    will be used, which contains the following substr: !<INPUT>! -- this 
-    function replaces this substr with the actual curr_input to produce the 
-    final promopt that will be sent to the GPT3 server. 
-    ARGS:
-    curr_input: the input we want to feed in (IF THERE ARE MORE THAN ONE
-                INPUT, THIS CAN BE A LIST.)
-    prompt_lib_file: the path to the promopt file. 
-    RETURNS: 
-    a str prompt that will be sent to OpenAI's GPT server.  
-    """
-    if type(curr_input) == type("string"): 
-        curr_input = [curr_input]
-    curr_input = [str(i) for i in curr_input]
+    return output["answer"]
 
-    f = open(prompt_lib_file, "r")
-    prompt = f.read()
-    f.close()
-    for count, i in enumerate(curr_input):   
-        prompt = prompt.replace(f"!<INPUT {count}>!", i)
-    if "<commentblockmarker>###</commentblockmarker>" in prompt: 
-        prompt = prompt.split("<commentblockmarker>###</commentblockmarker>")[1]
-    return prompt.strip()
 
-def extract_first_json_dict(data_str):
-# Find the first occurrence of a JSON object within the string
-    start_idx = data_str.find('{')
-    end_idx = data_str.find('}', start_idx) + 1
+    # def create_prompt_input(init_persona, target_persona, context):
+    #     persona = init_persona
 
-    # Check if both start and end indices were found
-    if start_idx == -1 or end_idx == 0:
-        return None
+    #     persona_str = ""
+    #     for key, val in persona.items():
+    #         persona_str += f"{key}: {val}\n"
+        
+    #     target_persona_str = ""
+    #     for key, val in target_persona.items():
+    #         target_persona_str += f"{key}: {val}\n"
 
-    # Extract the first JSON dictionary
-    json_str = data_str[start_idx:end_idx]
+    #     # curr_chat_str = ""
+    #     # for i in curr_chat:
+    #     #     curr_chat_str += ": ".join(i) + "\n"
+    #     # if curr_chat_str == "":
+    #     #     curr_chat_str = "The conversation has not started yet -- start it!]"
 
-    try:
-        # Attempt to parse the JSON data
-        json_dict = json.loads(json_str)
-        return json_dict
-    except json.JSONDecodeError:
-        # If parsing fails, return None
-        return None
+    #     init_description = f"{persona_str}"
+    #     target_description = f"{target_persona_str}"
+    #     prompt_input = [
+    #         context,          # 0 
+    #         init_description,       # 1
+    #         target_description,     # 2
+    #         init_persona["name"],   # 3
+    #         init_persona["topic"],  # 4
+    #         target_persona["name"], # 5
+    #         init_persona["name"],   # 6             
+    #         init_persona["name"],   # 7 
+    #         target_persona["name"], # 8
+    #         init_persona["name"],   # 9
+    #         init_persona["name"]]   # 10
+    #     return prompt_input
+    
+    # def __chat_func_clean_up(gpt_response, prompt=""): 
+    #     gpt_response = extract_first_json_dict(gpt_response)
+
+    #     cleaned_dict = dict()
+    #     cleaned = []
+    #     for key, val in gpt_response.items(): 
+    #         cleaned += [val]
+    #     cleaned_dict["utterance"] = cleaned[0]
+    #     cleaned_dict["end"] = True
+    #     if "f" in str(cleaned[1]) or "F" in str(cleaned[1]): 
+    #         cleaned_dict["end"] = False
+
+    #     return cleaned_dict
+
+    # def __chat_func_validate(gpt_response, prompt=""): 
+    #     print ("ugh...")
+    #     try: 
+    #     # print ("debug 1")
+    #     # print (gpt_response)
+    #     # print ("debug 2")
+
+    #         print (extract_first_json_dict(gpt_response))
+    #         # print ("debug 3")
+    #         return True
+    #     except:
+    #         return False 
+        
+    # def get_fail_safe():
+    #     cleaned_dict = dict()
+    #     cleaned_dict["utterance"] = "..."
+    #     cleaned_dict["end"] = False
+    #     return cleaned_dict
+
+    # print("11")
+    # prompt_template = "YAICON_Model_fight/data/prompt/conversation.txt"
+    # prompt_input = create_prompt_input(init_persona, target_persona, context)
+    
+    # print("22")
+    # prompt = generate_prompt(prompt_input, prompt_template)
+    
+    # print(prompt)
+
+#     # output = ms.get_model_request(prompt)
+
+# def generate_prompt(curr_input, prompt_lib_file): 
+#     if type(curr_input) == type("string"): 
+#         curr_input = [curr_input]
+#     curr_input = [str(i) for i in curr_input]
+
+#     f = open(prompt_lib_file, "r", encoding = 'utf-8')
+#     prompt = f.read()
+#     f.close()
+#     for count, i in enumerate(curr_input):   
+#         prompt = prompt.replace(f"!<INPUT {count}>!", i)
+#     if "<commentblockmarker>###</commentblockmarker>" in prompt: 
+#         prompt = prompt.split("<commentblockmarker>###</commentblockmarker>")[1]
+#     return prompt.strip()
+
+# def extract_first_json_dict(data_str):
+# # Find the first occurrence of a JSON object within the string
+#     start_idx = data_str.find('{')
+#     end_idx = data_str.find('}', start_idx) + 1
+
+#     # Check if both start and end indices were found
+#     if start_idx == -1 or end_idx == 0:
+#         return None
+
+#     # Extract the first JSON dictionary
+#     json_str = data_str[start_idx:end_idx]
+
+#     try:
+#         # Attempt to parse the JSON data
+#         json_dict = json.loads(json_str)
+#         return json_dict
+#     except json.JSONDecodeError:
+#         # If parsing fails, return None
+#         return None

@@ -1,0 +1,11 @@
+{
+    "name":"A",
+    "age":24,
+    "gender": "man",
+    
+    "religion": "christian",
+    "race": "asian",
+    "topic": "여성가족부 폐지",
+    "stance": "여성가족부는 폐지되어야 한다",
+    "background": "그는 여가부를 매우 싫어한다. 여가부로 인해 남성이 역으로 차별받는다고 생각한다."
+}
